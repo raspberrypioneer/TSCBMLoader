@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "outDir": ".",
+    "allowJs": true,
+    "target": "es2020"
+  },
+  "files": [
+    "./src/index.ts",
+    "./src/arduino.ts",
+    "./src/cbmloader.ts",
+    "./src/d64driver.ts",
+    "./src/prgdriver.ts",
+    "./src/t64driver.ts",
+    "./src/events.ts"
+  ]
+}
