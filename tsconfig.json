@@ -1,17 +1,15 @@
 {
   "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "types": ["w3c-web-serial"],
+    "outDir": "./js",
+    "rootDir": "./src",
     "strict": true,
-    "outDir": ".",
-    "allowJs": true,
-    "target": "es2020"
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
   },
-  "files": [
-    "./src/index.ts",
-    "./src/arduino.ts",
-    "./src/cbmloader.ts",
-    "./src/d64driver.ts",
-    "./src/prgdriver.ts",
-    "./src/t64driver.ts",
-    "./src/events.ts"
-  ]
+  "include": ["src/**/*"]
 }

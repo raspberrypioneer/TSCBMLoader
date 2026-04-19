@@ -1,58 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="stylesheet" href="styles.css">
-	<script src="arduino.js"></script>
-	<script src="events.js"></script>
-	<script src="prgdriver.js"></script>
-	<script src="d64driver.js"></script>
-	<script src="t64driver.js"></script>
-	<script src="cbmloader.js"></script>
-	<script src="index.js"></script>
-	<script src="resources/info_c64.js"></script>
-	<script src="resources/info_vic20.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <script src="js/index.js" defer></script>
+    <script src="js/arduino.js" defer></script>
+	<script src="js/serialtransport.js" defer></script>
+	<script src="js/events.js" defer></script>
+	<script src="js/prgdriver.js" defer></script>
+	<script src="js/d64driver.js" defer></script>
+	<script src="js/t64driver.js" defer></script>
+	<script src="js/cbmloader.js" defer></script>
 	<title>Commodore Loader</title>
 	<link rel="icon" type="image/x-icon" href="./resources/favicon.ico">
 </head>
-
 <body>
 
 	<section class="layout">
 		<div class="header">
-			<img id="imgLogo" alt="Logo" class="logo-class">
+            <img id="logoImg" src="./resources/logo_home.png" alt="Logo">
 		</div>
 		<div class="rightHeader">
-			<div id="divProgressBar" class="progress-bar-class" style="display: none;">
-				<div id="divTitle"></div>
-				<div id="divProgress" class="progress-class"></div>
+			<div id="progressBarDiv" class="progress-bar" style="display: none;">
+				<div id="titleDiv"></div>
+				<div id="progressDiv" class="progress"></div>
 			</div>
 		</div>
 		<div class="leftSide">
-			<img id="imgHome" src="./resources/logo_home.png" title="Home" alt="Home" class="image-action-class">
+			<img id="homeImg" src="./resources/logo_home.png" title="Home" alt="Home" class="action-btn">
 			<br/>
-			<img id="imgFileSelect" src="./resources/files-empty.png" title="Open files" alt="Open files" class="image-action-class">
-			<input type="file" id="fileInput" title="Choose files" multiple accept=".prg, .d64, .t64">
+			<img id="mediaPickIcon" src="./resources/files-empty.png" title="Open files" alt="Open files" class="action-btn">
+            <input type="file" id="folderPicker" webkitdirectory directory multiple accept=".prg, .d64, .t64, .jpg, .json">
 			<br/>
-			<img id="imgConnect" src="./resources/usb-disconnected.png" title="Connect" alt="Connect" class="image-action-class">
+			<img id="connectIcon" src="./resources/usb-disconnected.png" title="Connect" alt="Connect" class="action-btn">
 			<br/>
-			<img id="imgWeb" src="./resources/search-web.png" title="Search web" alt="Search web" class="image-action-class">
+			<img id="webIcon" src="./resources/search-web.png" title="Search web" alt="Search web" class="action-btn">
 		</div>
 		<div class="body">
-			<select id="selProgList" size="30" title="Select program" class="select-class"></select>
+            <div class="card">
+                <div id="tabsContainer" class="tabs-container"></div>
+                <div class="search-container">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search" disabled>
+                </div>
+                <select id="mediaSelect" size="22" title="Select program"></select>
+            </div>
 		</div>
 		<div class="rightSide" style="position: relative;">
-			<img id="imgArt" src="" title="Program artwork" alt="Program artwork" class="art-class" style="display: none;">
-			<div id="divDirectory" style="position: absolute; top: 8px; left: 16px; display: none;"></div>
-			<div id="divInfo" style="padding-left: 10px;"></div>
+            <img id="artImg" title="Program artwork" alt="Program artwork">
+			<div id="directoryDiv" style="position: absolute; top: 8px; left: 16px; display: none;"></div>
 		</div>
 		<div class="footer">
-			<div id="divReceivedMsg" style="padding-left: 5px;"></div>
+			<div id="receivedMsgDiv" style="height: 30px; margin: 5px; text-align: center;"></div>
+        </div>
+        <div class="rightFooter">
+            <div id="infoDiv" style="width: 400px; height: 30px; margin: 5px; text-align: center;"></div>
 		</div>
 	</section>
 
 </body>
-
 </html>

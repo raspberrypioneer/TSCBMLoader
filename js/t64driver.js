@@ -1,17 +1,20 @@
 "use strict";
-var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, state, kind, f) {
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-};
-var _t64driver_instances, _t64driver_replaceNonBreakSpace, _t64driver_fileLength, _t64driver_fileStartPos;
 //T64 special constants
 const DIR_ENTRIES_LOW_HIGH = 34;
 const TAPE_NAME_POS = 40;
 const TAPE_DIR_START_POS = 64;
 class t64driver {
+    fileRef; //File reference
+    progName; //Program name
+    progSize; //Program size
+    subProgSize; //Sub-program size
+    subProgPos; //Sub-program position
+    dirPos; //Directory position
+    dirEntryTotal; //Total number of directory entries
+    dirListing; //Directory listing
+    progBytes; //Program byte array
+    subProgBytes; //Sub-program byte array
     constructor(file) {
-        _t64driver_instances.add(this);
         this.fileRef = file;
         this.progName = file.name;
         this.progSize = file.size;
@@ -81,10 +84,10 @@ class t64driver {
             //If wildcard character is used, set the program position to the first PRG entry
             if (progName == "*" || progName == matchProgName || progName == matchPartial) {
                 this.progName = matchProgName;
-                this.subProgSize = __classPrivateFieldGet(this, _t64driver_instances, "m", _t64driver_fileLength).call(this, dirEntry) + 2; //Allow for the two start address bytes
+                this.subProgSize = this.#fileLength(dirEntry) + 2; //Allow for the two start address bytes
                 this.subProgPos = 0;
                 //Setup the sub program array with the two start address bytes
-                let progPos = __classPrivateFieldGet(this, _t64driver_instances, "m", _t64driver_fileStartPos).call(this, dirEntry);
+                let progPos = this.#fileStartPos(dirEntry);
                 this.subProgBytes = new Uint8Array(this.subProgSize);
                 this.subProgBytes.set([dirEntry[2], dirEntry[3]]);
                 this.subProgBytes.set(this.progBytes.slice(progPos, progPos + this.subProgSize - 2), 2);
@@ -97,7 +100,7 @@ class t64driver {
     //Return directory lines
     async getDirectoryLine() {
         const dirEntry = this.dirListing[this.dirPos];
-        const fileBlocks = Math.ceil(__classPrivateFieldGet(this, _t64driver_instances, "m", _t64driver_fileLength).call(this, dirEntry) / 256);
+        const fileBlocks = Math.ceil(this.#fileLength(dirEntry) / 256);
         const blockHigh = (fileBlocks >> 8) & 0xFF;
         const blockLow = fileBlocks & 0xFF;
         let prefix = [];
@@ -111,7 +114,7 @@ class t64driver {
             suffix = [arduino.QUOTE_CHAR, arduino.SPACE_CHAR, arduino.SPACE_CHAR].concat(arduino.FILE_TYPES[(dirEntry[1] & 0x07)] || []);
         }
         //Assemble the line and return it
-        const line = Uint8Array.from([blockLow, blockHigh].concat(prefix).concat(dirEntry.slice(16, 32).map(__classPrivateFieldGet(this, _t64driver_instances, "m", _t64driver_replaceNonBreakSpace))).concat(suffix)); //block size (2 bytes) and entry text
+        const line = Uint8Array.from([blockLow, blockHigh].concat(prefix).concat(dirEntry.slice(16, 32).map(this.#replaceNonBreakSpace)).concat(suffix)); //block size (2 bytes) and entry text
         if (this.dirPos >= this.dirListing.length - 1) { //Last directory entry
             this.dirPos = 0;
             return { protocol: Uint8Array.from([108 /* arduino.Command.DIR_END */, line.length]), payload: line };
@@ -121,16 +124,21 @@ class t64driver {
             return { protocol: Uint8Array.from([76 /* arduino.Command.DIR_NORMAL */, line.length]), payload: line };
         }
     } //getDirectoryLine
-}
-_t64driver_instances = new WeakSet(), _t64driver_replaceNonBreakSpace = function _t64driver_replaceNonBreakSpace(element) {
-    return element != arduino.NON_SPACE_CHAR ? element : arduino.SPACE_CHAR;
-}, _t64driver_fileLength = function _t64driver_fileLength(dirEntry) {
-    return (dirEntry[4] | (dirEntry[5] << 8)) - (dirEntry[2] | (dirEntry[3] << 8));
-}, _t64driver_fileStartPos = function _t64driver_fileStartPos(dirEntry) {
-    let fileStartPos = 0;
-    for (let b of [dirEntry[11], dirEntry[10], dirEntry[9], dirEntry[8]]) {
-        // Shift previous value 8 bits to right and add it with next value
-        fileStartPos = (fileStartPos << 8) + (b & 255);
+    //Private method: Remove non breaking space character
+    #replaceNonBreakSpace(element) {
+        return element != arduino.NON_SPACE_CHAR ? element : arduino.SPACE_CHAR;
     }
-    return fileStartPos;
-};
+    //Private method: Calculate the number of bytes of a file/program from the directory entry
+    #fileLength(dirEntry) {
+        return (dirEntry[4] | (dirEntry[5] << 8)) - (dirEntry[2] | (dirEntry[3] << 8));
+    }
+    //Private method: Calculate the start position of a file/program from the directory entry
+    #fileStartPos(dirEntry) {
+        let fileStartPos = 0;
+        for (let b of [dirEntry[11], dirEntry[10], dirEntry[9], dirEntry[8]]) {
+            // Shift previous value 8 bits to right and add it with next value
+            fileStartPos = (fileStartPos << 8) + (b & 255);
+        }
+        return fileStartPos;
+    }
+}

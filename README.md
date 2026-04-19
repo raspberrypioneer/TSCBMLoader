@@ -1,5 +1,5 @@
 # Commodore computer loader using standalone HTML/JavaScript and Arduino
-This project offers a simple and cost-effective way of loading software onto a Commodore 64 or Commodore Vic-20 retro-computer. It consists of two main components, an Arduino microcontroller which connects to the Commodore serial port, and local HTML/JavaScript programs which provide a front-end to select programs from.
+This project offers a simple and cost-effective way of loading software onto Commodore retro-computers (C64, C16, Vic-20) with a simple 1541 disk emulator. It consists of two main components, an Arduino microcontroller which connects to the Commodore serial port, and local HTML/JavaScript programs which provide a front-end to select programs from.
 
 ![App start screen](./docs/app-start-screen.png)
 
@@ -28,10 +28,29 @@ Main features
 - Select the Arduino board and port. Pro-micro clones are often mentioned as being Arduino Leonardo compliant. If yours is like this, choose Arduino Leonardo as your board
 - Compile and upload the Arduino sketch
 - Edit the settings section at the top of the [cbmloader.js](./cbmloader.js) program file with the Arduino pins and serial device filters used
-- Box art images are optional, but if used must be located in the `resources/art/c64` and `resources/art/vic20` subfolders and given the same name as their corresponding program with a `-image.jpg` extension, e.g. `Blue Max.d64` should have an associated image called `Blue Max-image.jpg`
-- Optional help information can be added into the `resources/info_c64.js` and `resources/info_vic20.js` files for each program as shown in the example below
+
+## Media
+- The media folders have the structure below. Just include the systems required under a root folder, e.g. `vic20` and its subfolders are only needed for the Vic-20.
 ```
-const info_c64 = {
+    root
+      |-- c16
+      |     |-- art
+      |     |-- info
+      |
+      |-- c64
+      |     |-- art
+      |     |-- info
+      |
+      |-- vic20
+            |-- art
+            |-- info
+
+```
+- Box art images are optional. They are `jpg` images located in an `art` subfolder. Each image must be given the same name as their corresponding program with an `-image.jpg` extension, e.g. `Blue Max.d64` should have an associated image called `Blue Max-image.jpg`
+- Program information is also optional. This is kept in a single `json` file per system in the `info` subfolder. The file should be named `info_{computer media folder}.json`, e.g. `info_c64.json` for C64 programs.
+- The `json` file appears as below with a program name key and its associated text.
+```
+{
 ,"Alien 3.d64":"Joystick port 2"
 ,"Blue Max.d64":"Joystick port 2"
 ,"Boulder Dash.d64":"Joystick port 1"
@@ -42,7 +61,7 @@ const info_c64 = {
 - Ensure all the physical connections are made between the Commodore, Arduino and PC
 - Remember that the Commodore should always be turned off when physically connecting to it
 - Open `index.html` in Chrome, Edge or Opera
-- Click the `Open files` icon then navigate to a folder containing D64, PRG and T64 programs
+- Click the `Open files` icon then navigate to the root folder containing the system subfolders holding D64, PRG and T64 programs
 - To select all files, click on one of them then press `CTRL + A` together and then choose `Open`
 - Turn the Commodore on and click the `Connect` icon to select an Arduino device and connect to it
 - On the Commodore, issue the required `LOAD` command. See commands section below
@@ -72,14 +91,14 @@ Adventure Land, AE, Alien Blitz, Amok, Arcadia, Astro Nell, Astroblitz, Atlantis
 
 Note that load times in disk drive mode are not fast by modern standards, taking just over a minute for most C64 programs. If the C64 EPYX fast-load cartridge is used, loading takes around 4-5 seconds.
 
-As this is not a 'true' disk drive emulator, there are some related downsides and some things which have not been tested.
+As this is not a 'true' 1541 disk drive emulator, there are some related downsides and some things which have not been tested.
 - Some program files, typically for the C64, do not load because they require features of the actual disk drive hardware
 - Has not been tested with C64 fast-load cartridges other than EPYX fast-load
 - Has not been fully tested with programs that use two or more D64 files
 - Saving programs or handling disk operations e.g. renaming a file is not currently supported
-- This project has used a PAL C64 and Vic-20 for testing, so it's uncertain how this might work on NTSC machines
+- This project has used a PAL C64 and Vic-20 for testing. It should work on NTSC machines but is untested
 
-A program title may have many different roms. If having a problem, try other versions instead, especially for a favourite game.
+A program title may have many different roms. If having a problem, try other versions instead.
 
 ## Hardware Interface
 **Important!** There is potential for variation and errors, so **only proceed if you are content to take on all risks involved**. Some specific points to be aware of:

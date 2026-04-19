@@ -1,10 +1,4 @@
 "use strict";
-var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, state, kind, f) {
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-};
-var _d64driver_instances, _d64driver_findProgram, _d64driver_replaceNonBreakSpace;
 //D64 special constants
 //Track start locations
 //  17 with 21 sectors
@@ -22,8 +16,17 @@ const BYTES_IN_SECTOR = 256;
 const DISK_NAME_POS = TRACK_START_POS[17] + 144; //Track 18, Sector 0, Disk name offset 142. (((17*21)*256))+144
 const DIR_START_POS = TRACK_START_POS[17] + BYTES_IN_SECTOR; //Track 18, Sector 1
 class d64driver {
+    fileRef; //File reference
+    progName; //Program name
+    progSize; //Program size
+    subProgSize; //Sub-program size
+    progPos; //Program position
+    dirPos; //Directory position
+    linkTrack; //Link track
+    linkSector; //Link sector
+    dirListing; //Directory listing
+    progBytes; //Program byte array
     constructor(file) {
-        _d64driver_instances.add(this);
         this.fileRef = file;
         this.progName = file.name;
         this.progSize = file.size;
@@ -104,14 +107,14 @@ class d64driver {
     //Open program by finding it
     async openProgram(bytesProgName) {
         let progName = String.fromCharCode(...bytesProgName).replace("\r", "").replace("\n", "").trim();
-        let found = __classPrivateFieldGet(this, _d64driver_instances, "m", _d64driver_findProgram).call(this, progName);
+        let found = this.#findProgram(progName);
         //Match not found, try again with less strict criteria
         if (!found) {
             //Remove part of name after comma, example "BTSCORES,S" becomes "BTSCORES" (S means SEQ file type)
             const pos = progName.indexOf(",");
             if (pos > 0) {
                 progName = progName.substring(0, pos);
-                found = __classPrivateFieldGet(this, _d64driver_instances, "m", _d64driver_findProgram).call(this, progName);
+                found = this.#findProgram(progName);
             }
         }
         return found;
@@ -131,7 +134,7 @@ class d64driver {
             suffix = [arduino.QUOTE_CHAR, arduino.SPACE_CHAR, arduino.SPACE_CHAR].concat(arduino.FILE_TYPES[(dirEntry[2] & 0x07)] || []);
         }
         //Assemble the line and return it
-        const line = Uint8Array.from(dirEntry.slice(30, 32).concat(prefix).concat(dirEntry.slice(5, 21).map(__classPrivateFieldGet(this, _d64driver_instances, "m", _d64driver_replaceNonBreakSpace))).concat(suffix)); //block size (2 bytes) and entry text
+        const line = Uint8Array.from(dirEntry.slice(30, 32).concat(prefix).concat(dirEntry.slice(5, 21).map(this.#replaceNonBreakSpace)).concat(suffix)); //block size (2 bytes) and entry text
         if (this.dirPos >= this.dirListing.length - 1) { //Last directory entry
             this.dirPos = 0;
             return { protocol: Uint8Array.from([108 /* arduino.Command.DIR_END */, line.length]), payload: line };
@@ -141,29 +144,32 @@ class d64driver {
             return { protocol: Uint8Array.from([76 /* arduino.Command.DIR_NORMAL */, line.length]), payload: line };
         }
     } //getDirectoryLine
-}
-_d64driver_instances = new WeakSet(), _d64driver_findProgram = function _d64driver_findProgram(progName) {
-    let found = false;
-    //Check for a program name match in the directory (excluding the header entry)
-    for (let i = 1; i < this.dirListing.length; i++) {
-        const dirEntry = this.dirListing[i];
-        const matchProgName = (String.fromCharCode(...dirEntry.slice(5, 21))).trim();
-        const pos = progName.indexOf("*");
-        const matchPartial = pos > 0 ? matchProgName.substring(0, pos) + "*" : "!NOTFOUND!";
-        //If wildcard character is used, set the program position to the first PRG entry
-        if (progName == "*" || progName == matchProgName || progName == matchPartial) {
-            if ([129, 130, 193, 194].includes(dirEntry[2])) { //type is SEQ, PRG, SEQ-locked, PRG-locked
-                this.linkTrack = dirEntry[3];
-                this.linkSector = dirEntry[4];
-                this.progName = matchProgName;
-                this.progPos = TRACK_START_POS[this.linkTrack - 1] + (this.linkSector * BYTES_IN_SECTOR);
-                this.subProgSize = (dirEntry[30] + (dirEntry[31] << 8)) * (BYTES_IN_SECTOR - 2); //Block size less the track/sector bytes in each block
-                found = true;
-                break;
+    //Private method: Match a program name in the directory list (or wildcard match), then set the program position to the resulting sector/track position
+    #findProgram(progName) {
+        let found = false;
+        //Check for a program name match in the directory (excluding the header entry)
+        for (let i = 1; i < this.dirListing.length; i++) {
+            const dirEntry = this.dirListing[i];
+            const matchProgName = (String.fromCharCode(...dirEntry.slice(5, 21))).trim();
+            const pos = progName.indexOf("*");
+            const matchPartial = pos > 0 ? matchProgName.substring(0, pos) + "*" : "!NOTFOUND!";
+            //If wildcard character is used, set the program position to the first PRG entry
+            if (progName == "*" || progName == matchProgName || progName == matchPartial) {
+                if ([129, 130, 193, 194].includes(dirEntry[2])) { //type is SEQ, PRG, SEQ-locked, PRG-locked
+                    this.linkTrack = dirEntry[3];
+                    this.linkSector = dirEntry[4];
+                    this.progName = matchProgName;
+                    this.progPos = TRACK_START_POS[this.linkTrack - 1] + (this.linkSector * BYTES_IN_SECTOR);
+                    this.subProgSize = (dirEntry[30] + (dirEntry[31] << 8)) * (BYTES_IN_SECTOR - 2); //Block size less the track/sector bytes in each block
+                    found = true;
+                    break;
+                }
             }
         }
+        return found;
     }
-    return found;
-}, _d64driver_replaceNonBreakSpace = function _d64driver_replaceNonBreakSpace(element) {
-    return element != arduino.NON_SPACE_CHAR ? element : arduino.SPACE_CHAR;
-};
+    //Private method: Remove non breaking space character
+    #replaceNonBreakSpace(element) {
+        return element != arduino.NON_SPACE_CHAR ? element : arduino.SPACE_CHAR;
+    }
+}

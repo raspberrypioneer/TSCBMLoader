@@ -1,5 +1,12 @@
 "use strict";
 class prgdriver {
+    fileRef; //File reference
+    progName; //Program name
+    progSize; //Program size
+    subProgSize; //Sub-program size
+    progPos; //Program position
+    blockSize; //Block size
+    progBytes; //Program byte array
     constructor(file) {
         this.fileRef = file;
         this.progName = file.name;
